@@ -7,31 +7,60 @@ import com.nimbusds.jose.proc.SecurityContext;
 import java.util.UUID;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.web.SecurityFilterChain;
 import smartmenu.authserver.util.KeyGeneratorUtil;
 
 @Configuration(proxyBeanMethods = false)
 public class AuthorizationServerConfig {
 
+  @Bean
+  @Order(Ordered.HIGHEST_PRECEDENCE)
+  public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
+      throws Exception {
+    OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+    return http.build();
+  }
+
+  // @formatter:off
+	@Bean
+	public RegisteredClientRepository registeredClientRepository() {
+		RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
+				.clientId("client")
+				.clientSecret("secret") // {noop}secret
+				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC
+        )
+				.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+				.build();
+		return new InMemoryRegisteredClientRepository(registeredClient);
+	}
+	// @formatter:on
 
   @Bean
-  public RegisteredClientRepository registeredClientRepository() {
-    RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
-        .clientId("telegram-bot-client")
-        .clientSecret("telegram-bot-secret")
-        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
-        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-        .redirectUri("http://localhost:8001/authorized")
-        .scope("articles.read")
-        .build();
-    return new InMemoryRegisteredClientRepository(registeredClient);
+  public PasswordEncoder passwordEncoder(){
+    return NoOpPasswordEncoder.getInstance();
   }
+//
+//	@Bean
+//	public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
+//		return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
+//	}
+//
+//	@Bean
+//	public OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
+//		return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
+//	}
 
   @Bean
   public JWKSource<SecurityContext> jwkSource() {
@@ -45,9 +74,19 @@ public class AuthorizationServerConfig {
     return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
   }
 
+//
 //	@Bean
-//	public ProviderSettings providerSettings() {
-//		return ProviderSettings.issuer("http://auth-server:9000").build();
+//	public EmbeddedDatabase embeddedDatabase() {
+//		// @formatter:off
+//		return new EmbeddedDatabaseBuilder()
+//				.generateUniqueName(true)
+//				.setType(EmbeddedDatabaseType.H2)
+//				.setScriptEncoding("UTF-8")
+//				.addScript("org/springframework/security/oauth2/server/authorization/oauth2-authorization-schema.sql")
+//				.addScript("org/springframework/security/oauth2/server/authorization/oauth2-authorization-consent-schema.sql")
+//				.addScript("org/springframework/security/oauth2/server/authorization/client/oauth2-registered-client-schema.sql")
+//				.build();
+//		// @formatter:on
 //	}
 
 }
