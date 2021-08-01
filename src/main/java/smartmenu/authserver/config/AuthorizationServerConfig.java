@@ -39,7 +39,7 @@ public class AuthorizationServerConfig {
 		RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
 				.clientId("client")
 				.clientSecret("secret") // {noop}secret
-				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC
+				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST
         )
 				.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
 				.build();
